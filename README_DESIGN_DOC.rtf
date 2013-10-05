@@ -1,0 +1,304 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red63\green95\blue191;\red127\green159\blue191;\red127\green127\blue159;
+}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\margl1440\margr1440\vieww33100\viewh18600\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs28 \cf0 Author: Chetan Ambekar\
+Application Name : ChetanTweetTest\
+Package Name : "com.example.chetantweettest"\
+Version Code: "1"\
+Version Name:"1.0"\
+Target SDK Version: 18\
+Permissions: "android.permission.INTERNET"\
+Libraries: signpost-commonshttp4-1.2.1.1.jar \\\
+		    signpost-core-1.2.1.1.jar\
+\
+\
+How to:\
+\
+1) Install ChetanTweetTest.apk on your device. \
+2) The application has a launcher ICON.\
+3) Upon starting the application, click the Login to Twitter button.\
+4) Device's browser will pop up with Twitter page asking for login.\
+5) After successful login, grant permission to this application in the browser.\
+6) You will be redirected to the application which will proceed to fetch the trending tweets, parse it and display it.\
+\
+\pard\pardeftab720\ql\qnatural
+\cf2 \
+\
+\pard\pardeftab720\ql\qnatural
+\cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\ql\qnatural\pardirnatural
+\cf0 \
+Problem Description:\
+\
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 Implement a class that asynchronously downloads the trending tweets on twitter and passes the results back via interface.\
+Restrictions\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\ql\qnatural
+\ls1\ilvl0\cf0 {\listtext	\'95	}No more than three requests should ever execute in parallel, regardless of how many times the class has been instantiated or the retrieval method invoked\
+{\listtext	\'95	}All of the requests should execute eventually (bonus points for providing a mechanism to cancel one or more outstanding requests)\
+{\listtext	\'95	}Code should be executable both from UI-bound (Activities) and non-UI (Services) classes\
+{\listtext	\'95	}The use of libraries that are geared specifically for Twitter API, such as Twitter4J is not allowed. Basically think of the problem as if it were a generic REST service with OAuth2 authentication mechanism\
+\pard\tx560\pardeftab720\ql\qnatural
+\cf0 \
+\pard\pardeftab720\sa280\ql\qnatural
+\cf0 Recommendations\
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 It is recommended that some sort of OAuth library (just not Twitter-specific) be used for proper handling of the authentication flow.\
+\pard\pardeftab720\sa280\ql\qnatural
+\cf0 Output\
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 At a minimum the source code and an explanation of design, decisions made and choices considered (where applicable) should be provided. Ideally a functioning APK should be provided as well. Bonus given for automated tests.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+\cf0 \
+\
+Design Consideration and Class Description:\
+\
+\pard\pardeftab720
+\cf2 /**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: NetworkService.java\cf0 \
+\cf2  * Description: NetworkService is the main background service which \cf0 \
+\cf2  * provides the following APIS:\cf0 \
+\cf2  * API: Clients must call this API to retrive Request Token from the server. \cf0 \
+\cf2  * On success/failure Intent INTENT_REQUEST_TOKENS_RETRIEVED\cf0 \
+\cf2  * will be sent out with String Extra "result" set to "true"/"false".\cf0 \
+\cf2  * void login();\cf0 \
+\cf2  * \cf0 \
+\cf2  * API: Clients must call this API to retrive user credentials (retrive Access tokens) \cf0 \
+\cf2  * before attempting to fetch streams. On success/failure Intent INTENT_RETRIVE_USER_CREDENTIALS\cf0 \
+\cf2  * will be sent out with String Extra "result" set to "true"/"false".\cf0 \
+\cf2  * void retriveUserCredentials(in Uri uri);\cf0 \
+\cf2  * \cf0 \
+\cf2  * API: To start fetching trending tweets. The API returns a unique ID to the caller\cf0 \
+\cf2  * in this case hashCode of the Thread created to perform the task. Clients can use this \cf0 \
+\cf2  * ID to cancel a requested Stream if they desire. \cf0 \
+\cf2  * The API takes as input IStreamUpdateListener which it uses to return the tweeter feed \cf0 \
+\cf2  * once it is sucessfully downloaded, thus allowing this api to remain asynchronous.\cf0 \
+\cf2  * At anytime at most 3 requests will be in progress. This is acheieved\cf0 \
+\cf2  * by using an ExecutorService and setting the FixedThreadPoolCount of 3 on the executor.\cf0 \
+\cf2  * Any additional requests will\cf0 \
+\cf2  * remain queued up until one of the running request finishes. \cf0 \
+\cf2  * int fetchStream(IStreamUpdateListener s);\cf0 \
+\cf2  * \cf0 \
+\cf2  * API: To cancel a previously requested Stream. Stream either queued due to \cf0 \
+\cf2  * max downloads (3) in progress or currently downloading in both cases will be\cf0 \
+\cf2  * cancelled.\cf0 \
+\cf2  * boolean cancelStream(int StreamID);\cf0 \
+\cf2  * CB From Network Service: \cf0 \
+\cf2  * To be implemented by clients to receive Stream after successful download.\cf0 \
+\cf2  * void streamUpdate(String stream);\cf0 \
+\cf2  * \cf0 \
+\cf2  * Within itself this class has two AsynTasks: AuthenticationTask \cf4 ->\cf2  to retrieveRequestToken\cf0 \
+\cf2  * and RetriveTask \cf4 ->\cf2  to retrieveAccessToken.\cf0 \
+\cf2  * The FetchStream Operation is performed in the a seperate Runnable(FetchStreamRunnable)\cf0 \
+\cf2  * and executed using a ExecutorService. Each time a request is made to get the new stream \cf0 \
+\cf2  * the runnable of type FetchStreamRunnable is created and submitted to ExecutorService. \cf0 \
+\cf2  * In return a Future is obtained from the ExecutorService. This future (Value) along with \cf0 \
+\cf2  * hashCode of the Thread (key) is stored in the HastTable activeOrPendingStreams.\cf0 \
+\cf2  * The Key is removed from the HashTable if:\cf0 \
+\cf2  * 1) The stream is successfully downloaded and job is completed\cf0 \
+\cf2  * 2) A stream is cancelled using the cancelStream(int) API.\cf0 \
+\cf2  *\cf0 \
+\cf2  * The Service also sends out the following intents to update clients on it's progress.\cf0 \
+\cf2  * Const.INTENT_REQUEST_TOKENS_RETRIEVED \cf4 ->\cf2  Once retriveRequestToken is performed and \cf0 \
+\cf2  * result is store as String Extra on the intent.\cf0 \
+\cf2  * Const.INTENT_RETRIVE_USER_CREDENTIALS \cf4 ->\cf2  Once retrieveAccessToken is performed and \cf0 \
+\cf2  * result is store as String Extra on the intent.\cf0 \
+\cf2  *\cf0 \
+\cf2  */\
+\
+\
+/**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: FetchStreamRunnable.java\cf0 \
+\cf2  * Description: FetchStreamRunnable class implements Runnable.\cf0 \
+\cf2  * A new instance of FetchStreamRunnable is created each time a\cf0 \
+\cf2  * new request is made to download the treanding tweets.\cf0 \
+\cf2  * The Runnable ID is used as its primary key and stored in \cf0 \
+\cf2  * a HashTable along with its Future assigned when submitted to the\cf0 \
+\cf2  * ExecutorService. This ID is used to monitor, handle, cancel streams.\cf0 \
+\cf2  *\cf0 \
+\cf2  */\cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+\cf0 \
+\pard\pardeftab720
+\cf2 /**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: OAuthHelper.java\cf0 \
+\cf2  * Description: OAuthHelper class provides a singleton Design Pattern. The\cf0 \
+\cf2  * class encapsulates objects of OAuthProvider and CommonsHttpOAuthConsumer.\cf0 \
+\cf2  * The singleton design patter is choosen so as to have a single instance of\cf0 \
+\cf2  * of OAuthProvider and CommonsHttpOAuthConsumer throughout the \cf0 \
+\cf2  * implementation. \cf0 \
+\cf2  *\cf0 \
+\cf2  */\cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+\cf0 \
+\pard\pardeftab720
+\cf2 /**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: CallBackActivity.java\cf0 \
+\cf2  * Description: This is the CallBackActivity once the app has been\cf0 \
+\cf2  * granted access by the server, Twitter in this case. Upon getting \cf0 \
+\cf2  * the acess this Activity uses its binder to the NetworkService to \cf0 \
+\cf2  * retrive Access Tokens which can be use to fetch streams. \cf0 \
+\cf2  * \cf0 \
+\cf2  * The Activity has a broadcastListener which listens on Intent\cf0 \
+\cf2  * INTENT_RETRIVE_USER_CREDENTIALS and upon successful retrival \cf0 \
+\cf2  * calls INetworkService API fetchStreams and provides the \cf0 \
+\cf2  * CB handle to get steamUpdated(). NOTE: This call be done on main thread\cf0 \
+\cf2  * since the api fetchStream is asynchronous and returns immediately.A ThreadID \cf0 \
+\cf2  * is returned which can be used to cancel that particular request. At \cf0 \
+\cf2  * this point a ProgressDialouge is shown to the User. \cf0 \
+\cf2  * \cf0 \
+\cf2  * Upon sucessfully downloading the stream the Activity makes use of \cf0 \
+\cf2  * helper class ListGenerator which parses the stream and creates a\cf0 \
+\cf2  * ArrayList of the TweetInfo. Currently TweetInfo contains useName,\cf0 \
+\cf2  * the tweet and URL to profile picture.\cf0 \
+\cf2  * \cf0 \
+\cf2  * After the the list is generated the activity uses sendMessage API of\cf0 \
+\cf2  * the handler to get control back into Main Thread since this processing\cf0 \
+\cf2  * of the list was done is the CB thread. \cf0 \
+\cf2  * \cf0 \
+\cf2  * Once control is gained back onto the Main Thread where the intital \cf0 \
+\cf2  * View was set the list items are updated and latest trending tweets are\cf0 \
+\cf2  * available.\cf0 \
+\cf2  * \cf0 \
+\cf2  * At any given point multiple calls can be made to fetchStream, especially\cf0 \
+\cf2  * in the scenario when the user is constantly scrolling. INetworkService \cf0 \
+\cf2  * also provides a cancelStream api to cancel the stream using the ThreadID\cf0 \
+\cf2  * received from fetchStream. This could most often be used when the user\cf0 \
+\cf2  * is contantly scrolling in opposite directions rendering the previous request\cf0 \
+\cf2  * of no use.\cf0 \
+\cf2  *\cf0 \
+\cf2  *\cf0 \
+\cf2  */\
+\
+\
+/**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: TweetInfo.java\cf0 \
+\cf2  * Description: Objects of TweetInfo will be created and stored\cf0 \
+\cf2  * in an ArrayList by the ListGenerator. ListGenerator will call\cf0 \
+\cf2  * its setter methods to set userName, the tweet and profile pic URL\cf0 \
+\cf2  * on to this object after parsing the JSONArray acquired from the \cf0 \
+\cf2  * downloaded stream.\cf0 \
+\cf2  * CallBackActivity will retrieve these objs from the ArrayList created by\cf0 \
+\cf2  * the listGenerator and display the information. \cf0 \
+\cf2  *\cf0 \
+\cf2  */\
+\
+\
+/**\cf0 \
+\cf2  * \cf3 @author\cf2  chetanambekar\cf0 \
+\cf2  * File: ListGenerator.java\cf0 \
+\cf2  * Description: Helper class to provide two methods\cf0 \
+\cf2  * generateList(String stream) \cf4 -\cf2  Takes the downloaded stream as input \cf0 \
+\cf2  * creates a JSONArray out of it parses the fields userName, tweet and\cf0 \
+\cf2  * profile pic, creates an obj of TweetInfo and stored tweetinfo into\cf0 \
+\cf2  * the List.\cf0 \
+\cf2  * \cf0 \
+\cf2  * getFeedList() \cf4 -\cf2  returns List\cf4 <TweetInfo>\cf2  created by generateList.\cf0 \
+\cf2  *\cf0 \
+\cf2  */\
+\
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 \
+Solution :\
+\
+1) No more than three requests should ever execute in parallel, regardless of how many times the class has been instantiated or the retrieval method invoked\
+2) All of the requests should execute eventually (bonus points for providing a mechanism to cancel one or more outstanding requests)\
+1 & 2 Achieved using :\
+\pard\pardeftab720
+\cf2  * API: To start fetching trending tweets. The API returns a unique ID to the caller\cf0 \
+\cf2  * in this case hashCode of the Thread created to perform the task. Clients can use this \cf0 \
+\cf2  * ID to cancel a requested Stream if they desire. \cf0 \
+\cf2  * The API takes as input IStreamUpdateListener which it uses to return the tweeter feed \cf0 \
+\cf2  * once it is sucessfully downloaded, thus allowing this api to remain asynchronous.\cf0 \
+\cf2  * At anytime at most 3 requests will be in progress. This is acheieved\cf0 \
+\cf2  * by using an ExecutorService and setting the FixedThreadPoolCount of 3 on the executor.\cf0 \
+\cf2  * Any additional requests will\cf0 \
+\cf2  * remain queued up until one of the running request finishes. \cf0 \
+\cf2  * int fetchStream(IStreamUpdateListener s);\cf0 \
+\cf2  * \cf0 \
+\cf2  * API: To cancel a previously requested Stream. Stream either queued due to \cf0 \
+\cf2  * max downloads (3) in progress or currently downloading in both cases will be\cf0 \
+\cf2  * cancelled.\cf0 \
+\cf2  * boolean cancelStream(int StreamID);\cf0 \
+\cf2  * CB From Network Service: \cf0 \
+\cf2  * To be implemented by clients to receive Stream after successful download.\cf0 \
+\cf2  * void streamUpdate(String stream);\cf0 \
+\cf2  * The FetchStream Operation is performed in the a seperate Runnable(FetchStreamRunnable)\cf0 \
+\cf2  * and executed using a ExecutorService. Each time a request is made to get the new stream \cf0 \
+\cf2  * the runnable of type FetchStreamRunnable is created and submitted to ExecutorService. \cf0 \
+\cf2  * In return a Future is obtained from the ExecutorService. This future (Value) along with \cf0 \
+\cf2  * hashCode of the Thread (key) is stored in the HastTable activeOrPendingStreams.\cf0 \
+\cf2  * The Key is removed from the HashTable if:\cf0 \
+\cf2  * 1) The stream is successfully downloaded and job is completed\cf0 \
+\cf2  * 2) A stream is cancelled using the cancelStream(int) API.\
+\
+3) \cf0 Code should be executable both from UI-bound (Activities) and non-UI (Services) classes\
+\
+3 Achieved Using: \
+\
+NetworkService is an Android services which exposes INetworkService and IStreamUpdateListener. Since NetworkService is a Service both other Activities and Services can bind to it\
+to use the AIDL api's.\
+\
+\pard\pardeftab720\ql\qnatural
+\cf0 INetworkService.AIDL:\
+\
+\pard\pardeftab720
+\cf0 package com.example.chetantweettest;\
+\
+import com.example.chetantweettest.IStreamUpdateListener;\
+\
+interface INetworkService \{\
+	\
+	//API: Clients must call this API to retrive Request Token from the server.\
+	void login();\
+	\
+	//API: Clients must call this API to retrive user credentials before\
+	//attempting to fetch streams. On success/failure Intent INTENT_RETRIVE_USER_CREDENTIALS\
+	//will be sent out with String Extra "result" set to "true"/"false".\
+	void retriveUserCredentials(in Uri uri);\
+	\
+	//API: To start fetching trending tweets\
+	int fetchStream(IStreamUpdateListener s);\
+	\
+	//API: To cancel a previously requested Stream. Stream either queued due to \
+	//max downloads (3) in progress or currently downloading both cases will be\
+	//cancelled.\
+	boolean cancelStream(int StreamID);	\
+    \
+\}\
+\
+IStreamUpdateListener.AIDL:\
+\
+package com.example.chetantweettest;\
+\
+\
+interface IStreamUpdateListener \{\
+\
+ //CB From Network Service: \
+ //To be implemented by clients to receive Stream after successful download.\
+ void streamUpdate(String stream);\
+\
+\}\
+\
+4) The use of libraries that are geared specifically for Twitter API, such as Twitter4J is not allowed. Basically think of the problem as if it were a generic REST service with OAuth2 authentication mechanism\
+\
+4 Achieved using:\
+Libraries: signpost-commonshttp4-1.2.1.1.jar \\\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+\cf0 		    signpost-core-1.2.1.1.jar\
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 \
+\
+\
+}
